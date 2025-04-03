@@ -4,6 +4,7 @@ pipeline {
     environment {
         AWS_REGION = 'us-east-1'
         TERRAFORM_VERSION = '1.10.5'
+        TF_WORK_DIR = "/var/lib/jenkins/workspace/terra"
     }
 
     stages {
@@ -21,7 +22,7 @@ pipeline {
 
         stage('Terraform Init') {
             steps {
-                dir('aws-infra') { 
+               dir("${TF_WORK_DIR}") { 
                     sh 'terraform init'
                 }
             }
@@ -29,7 +30,7 @@ pipeline {
 
         stage('Terraform Plan') {
             steps {
-                dir('aws-infra') { 
+               dir("${TF_WORK_DIR}") { 
                     sh ' terraform plan -out=tfplan'
                 }
             }
@@ -37,8 +38,8 @@ pipeline {
 
         stage('Terraform Apply') {
             steps {
-                dir('aws-infra') { 
-                    sh 'terraform apply tfplan'
+                dir("${TF_WORK_DIR}") {  
+                    sh 'terraform apply -auto-approve tfplan'
                 }
             }
         }
