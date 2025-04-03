@@ -1,0 +1,9 @@
+ami = "ami-084568db4383264d4"
+aws_region = "us-east-1"
+bucket_name = "my-aws-bucket-terraform"
+db_instance_class = "db.t3.micro"
+db_password = "mypassword"
+db_storage = 50
+db_username = "admin"
+instance_type = "t2.micro"
+vpc_cidr = "10.0.0.0/16"
