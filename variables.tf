@@ -1,0 +1,9 @@
+variable "aws_region" {}
+variable "vpc_cidr" {}
+variable "ami" {}
+variable "instance_type" {}
+variable "db_storage" {}
+variable "db_instance_class" {}
+variable "db_username" {}
+variable "db_password" {}
+variable "bucket_name" {}
