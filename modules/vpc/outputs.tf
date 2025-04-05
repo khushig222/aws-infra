@@ -1,15 +1,14 @@
 output "vpc_id" {
-  value = aws_vpc.main.id
+  description = "ID of the created VPC"
+  value       = aws_vpc.custom_vpc.id
 }
 
-output "public_subnet_id" {
-  value = aws_subnet.public_subnet[0].id
+output "public_subnets" {
+  description = "List of created public subnets"
+  value       = aws_subnet.public_subnet[*].id
 }
 
-output "public_subnet_ids" {
-  value = aws_subnet.public_subnet[*].id
-}
-
-output "default_sg" {
-  value = aws_security_group.default_sg.id
+output "private_subnets" {
+  description = "List of created private subnets"
+  value       = aws_subnet.private_subnet[*].id
 }

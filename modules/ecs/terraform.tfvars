@@ -1,0 +1,9 @@
+cluster_name    = "my-ecs-cluster"
+app_image       = "140023382994.dkr.ecr.eu-north-1.amazonaws.com/myecr-repo:ecr"
+task_cpu        = 512
+task_memory     = 1024
+frontend_port   = 80
+backend_port    = 5000
+desired_count   = 2
+db_user         = "admin"
+db_pass         = "mypassword"
