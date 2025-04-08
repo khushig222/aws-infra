@@ -1,54 +1,33 @@
-# Fetch the private subnets from the VPC module
-data "aws_subnets" "private_subnets" {
-  filter {
-    name   = "vpc-id"
-    values = [var.vpc_id]
-  }
-}
-
-# Create RDS Subnet Group (Uses Private Subnets from Terraform)
-resource "aws_db_subnet_group" "rds_subnet_group" {
-  name       = "${var.env}-rds-subnet-group"
-  subnet_ids = data.aws_subnets.private_subnets.ids
-
-  tags = {
-    Name        = "${var.env}-rds-subnet-group"
-    Environment = var.env
-  }
-}
-
-# Fetch the RDS Security Group created by Terraform
-data "aws_security_group" "rds_sg" {
-  filter {
-    name   = "group-name"
-    values = ["${var.env}-rds-sg"]
-  }
-}
-
-# Create RDS Instance
-resource "aws_db_instance" "rds_instance" {
-  identifier             = "${var.env}-rds-instance"
+resource "aws_db_instance" "rds_mysql" {
+  identifier             = "rds-mysql-instance"
   engine                = "mysql"
-  engine_version        = var.db_version
-  instance_class        = var.db_instance_type
-  allocated_storage     = var.db_storage
-  max_allocated_storage = var.db_max_storage
+  engine_version        = "8.0"
+  instance_class        = var.instance_class
+  allocated_storage     = var.allocated_storage
+  storage_type          = "gp2"
+  storage_encrypted     = true
+  multi_az              = true
   db_name               = var.db_name
-  username              = var.db_user
+  username              = var.db_username
   password              = var.db_password
-  parameter_group_name  = aws_db_parameter_group.rds_params.name
-  db_subnet_group_name  = aws_db_subnet_group.rds_subnet_group.name
-  vpc_security_group_ids = [data.aws_security_group.rds_sg.id]
+  parameter_group_name  = "default.mysql8.0"
+  publicly_accessible   = false
+  skip_final_snapshot   = true
 
-  # High Availability (Multi-AZ Deployment)
-  multi_az               = var.multi_az
-  storage_encrypted      = true
-  backup_retention_period = var.backup_retention
-  deletion_protection    = true
-  skip_final_snapshot    = false
+  vpc_security_group_ids = [var.rds_sg_id]
+  db_subnet_group_name   = aws_db_subnet_group.rds_subnet_group.name
 
   tags = {
-    Name        = "${var.env}-rds-instance"
-    Environment = var.env
+    Name = "RDS-MySQL-Instance"
+  }
+}
+
+# RDS Subnet Group (Uses Private Subnets)
+resource "aws_db_subnet_group" "rds_subnet_group" {
+  name       = "rds-subnet-group"
+  subnet_ids = var.private_subnet_ids
+
+  tags = {
+    Name = "RDS-Subnet-Group"
   }
 }

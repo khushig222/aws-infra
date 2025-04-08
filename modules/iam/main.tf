@@ -1,130 +1,97 @@
-# IAM Role for ECS Task Execution
-resource "aws_iam_role" "ecs_task_execution_role" {
-  name = "ecsTaskExecutionRole"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Principal = { Service = "ecs-tasks.amazonaws.com" }
-      Action = "sts:AssumeRole"
-    }]
-  })
-}
-
-# IAM Role for EC2 Instance
 resource "aws_iam_role" "ec2_role" {
-  name = "ec2InstanceRole"
+  name = "ec2-instance-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
-      Principal = { Service = "ec2.amazonaws.com" }
       Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      }
     }]
   })
 }
 
-# IAM Role for RDS Access
-resource "aws_iam_role" "rds_role" {
-  name = "rdsAccessRole"
-
-  assume_role_policy = jsonencode({
+resource "aws_iam_policy" "ec2_policy" {
+  name        = "EC2AccessPolicy"
+  description = "Policy for EC2 to access RDS, CloudWatch, and S3"
+  policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Principal = { Service = "rds.amazonaws.com" }
-      Action = "sts:AssumeRole"
-    }]
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["rds:*", "s3:*", "logs:*"]
+        Resource = "*"
+      }
+    ]
   })
 }
 
 # Instance Profile for EC2
-resource "aws_iam_instance_profile" "ec2_instance_profile" {
-  name = "ec2InstanceProfile"
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "ec2-instance-profile"
   role = aws_iam_role.ec2_role.name
 }
 
-# IAM Policies for S3, RDS, and CloudWatch
-resource "aws_iam_policy" "s3_access" {
-  name        = "s3AccessPolicy"
-  description = "Policy for ECS & EC2 to access S3"
-  policy = jsonencode({
+
+resource "aws_iam_role_policy_attachment" "ec2_attachment" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.ec2_policy.arn
+}
+
+# ECS Role
+resource "aws_iam_role" "ecs_task_role" {
+  name = "ecs-task-role"
+
+  assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
+      Action = "sts:AssumeRole"
       Effect = "Allow"
-      Action = ["s3:ListBucket", "s3:GetObject", "s3:PutObject"]
-      Resource = ["arn:aws:s3:::${var.s3_bucket}", "arn:aws:s3:::${var.s3_bucket}/*"]
+      Principal = {
+        Service = "ecs-tasks.amazonaws.com"
+      }
     }]
   })
 }
 
-resource "aws_iam_policy" "rds_access" {
-  name        = "rdsAccessPolicy"
-  description = "Policy for ECS & EC2 to access RDS"
+resource "aws_iam_policy" "ecs_policy" {
+  name        = "ECSAccessPolicy"
+  description = "Policy for ECS tasks to access ECR and CloudWatch"
+  
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Action = ["rds:DescribeDBInstances", "rds:Connect"]
-      Resource = ["*"]
-    }]
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["ecr:GetAuthorizationToken", "ecr:BatchCheckLayerAvailability", "ecr:GetDownloadUrlForLayer", "ecr:DescribeRepositories"]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["logs:*"]
+        Resource = "*"
+      }
+    ]
   })
 }
 
-resource "aws_iam_policy" "cloudwatch_access" {
-  name        = "cloudWatchAccessPolicy"
-  description = "Policy for ECS & EC2 to write logs to CloudWatch"
-  policy = jsonencode({
+resource "aws_iam_role_policy_attachment" "ecs_attachment" {
+  role       = aws_iam_role.ecs_task_role.name
+  policy_arn = aws_iam_policy.ecs_policy.arn
+}
+
+resource "aws_iam_role" "ecs_execution_role" {
+  name = "ecsExecutionRole"
+  assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
+      Action = "sts:AssumeRole"
       Effect = "Allow"
-      Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
-      Resource = ["arn:aws:logs:*:*:*"]
+      Principal = {
+        Service = "ecs-tasks.amazonaws.com"
+      }
     }]
   })
-}
-
-# Attach IAM Policies to ECS Task Role
-resource "aws_iam_role_policy_attachment" "ecs_s3_attach" {
-  role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = aws_iam_policy.s3_access.arn
-}
-
-resource "aws_iam_role_policy_attachment" "ecs_rds_attach" {
-  role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = aws_iam_policy.rds_access.arn
-}
-
-resource "aws_iam_role_policy_attachment" "ecs_cloudwatch_attach" {
-  role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = aws_iam_policy.cloudwatch_access.arn
-}
-
-# Attach IAM Policies to EC2 Role
-resource "aws_iam_role_policy_attachment" "ec2_s3_attach" {
-  role       = aws_iam_role.ec2_role.name
-  policy_arn = aws_iam_policy.s3_access.arn
-}
-
-resource "aws_iam_role_policy_attachment" "ec2_rds_attach" {
-  role       = aws_iam_role.ec2_role.name
-  policy_arn = aws_iam_policy.rds_access.arn
-}
-
-resource "aws_iam_role_policy_attachment" "ec2_cloudwatch_attach" {
-  role       = aws_iam_role.ec2_role.name
-  policy_arn = aws_iam_policy.cloudwatch_access.arn
-}
-
-# Attach IAM Policies to RDS Role
-resource "aws_iam_role_policy_attachment" "rds_s3_attach" {
-  role       = aws_iam_role.rds_role.name
-  policy_arn = aws_iam_policy.s3_access.arn
-}
-
-resource "aws_iam_role_policy_attachment" "rds_cloudwatch_attach" {
-  role       = aws_iam_role.rds_role.name
-  policy_arn = aws_iam_policy.cloudwatch_access.arn
 }

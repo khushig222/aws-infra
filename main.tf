@@ -1,68 +1,83 @@
-terraform {
-  required_version = ">= 1.3.0"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = ">= 5.0"
-    }
-  }
+module "vpc" {
+  source               = "./modules/vpc"
+  vpc_name             = var.vpc_name
+  vpc_cidr             = var.vpc_cidr
+  public_subnet_cidrs  = var.public_subnets_cidrs
+  private_subnet_cidrs = var.private_subnets_cidrs
+  availability_zones   = var.availability_zones
 }
 
-module "vpc" {
-  source         = "aws-infra/modules/vpc"
-  vpc_cidr       = var.vpc_cidr
-  public_subnet  = var.public_subnet
-  private_subnet = var.private_subnet
-}
 
 module "security_groups" {
-  source       = "aws-infra/modules/security-groups"
+  source       = "./modules/security-groups"
+  project_name = var.project_name
   vpc_id       = module.vpc.vpc_id
-  sg_name      = var.sg_name
-  allowed_cidr = var.allowed_cidr
 }
+
 
 module "ec2" {
-  source             = "aws-infra/modules/ec2"
-  ami_id             = var.ami_id
-  instance_type      = var.instance_type
-  key_name           = var.key_name
-  public_subnet_id   = module.vpc.public_subnet_ids[0]
-  private_subnet_id  = module.vpc.private_subnet_ids[0]
-  public_sg_id       = module.security_groups.public_sg_id
-  private_sg_id      = module.security_groups.private_sg_id
-  instance_name      = var.instance_name
+  source            = "./modules/ec2"
+  vpc_id            = module.vpc.vpc_id
+  ami_id            = "ami-084568db4383264d4"
+  instance_type     = "t3.micro"
+  public_subnet_id  = module.vpc.public_subnet_ids[0]
+  private_subnet_id = module.vpc.private_subnet_ids[0]
+  public_sg_id      = module.security_groups.web_server_sg_id
+  private_sg_id     = module.security_groups.app_server_sg_id
+  key_name          = "rds-key"
+  # Attach IAM Role
+  iam_instance_profile = module.iam.ec2_instance_profile_name
+  iam_role_name        = module.iam.ec2_role_name
 }
 
+
 module "rds" {
-  source                = "aws-infra/modules/rds"
-  db_instance_id        = var.db_instance_id
-  db_username           = var.db_username
-  db_password           = var.db_password
-  db_name               = var.db_name
-  db_subnet_group       = module.vpc.db_subnet_group_name
-  vpc_security_group_ids = [module.security_groups.rds_sg_id]
+  source             = "./modules/rds"
+  instance_class     = "db.t3.micro"
+  allocated_storage  = 20
+  db_name            = "mydb"
+  db_username        = "admin"
+  db_password        = "newpassword"
+  private_subnet_ids = module.vpc.private_subnet_ids
+  rds_sg_id          = module.security_groups.database_sg_id
 }
 
 module "alb" {
-  source           = "aws-infra/modules/alb"
-  vpc_id           = module.vpc.vpc_id
-  public_sg_id     = module.security_groups.public_sg_id
-  public_subnet_ids = module.vpc.public_subnet_ids
-}
-
-module "ecs" {
-  source            = "aws-infra/modules/ecs"
-  cluster_name      = var.ecs_cluster_name
+  source            = "./modules/alb"
   vpc_id            = module.vpc.vpc_id
   public_subnet_ids = module.vpc.public_subnet_ids
+  alb_sg_id         = module.security_groups.web_alb_sg_id
+  public_ec2_id     = module.ec2.public_ec2_instance_id
+  private_ec2_id    = module.ec2.private_ec2_instance_id
 }
+
+
+module "ecs" {
+  source               = "./modules/ecs"
+  ecs_cluster_name     = var.ecs_cluster_name
+  task_family          = var.task_family
+  execution_role_arn   = module.iam.execution_role_arn
+  task_role_arn        = module.iam.task_role_arn
+  cpu                  = "512"
+  memory               = "1024"
+  container_name       = "app-container"
+  container_image      = "1234567890.dkr.ecr.us-east-1.amazonaws.com/myecr-repo:ecr"
+  container_port       = 8080
+  service_name         = "app-service"
+  desired_count        = 2
+  private_subnets      = module.vpc.private_subnet_ids
+  ecs_security_group   = module.security_groups.ecs_sg_id
+  alb_target_group_arn = module.alb.target_group_arn
+}
+
 
 module "iam" {
-  source = "aws-infra/modules/iam"
+  source = "./modules/iam"
 }
 
+
 module "s3" {
-  source      = "aws-infra/modules/s3"
-  bucket_name = var.s3_bucket_name
+  source      = "./modules/s3"
+  bucket_name = var.bucket_name
 }
+

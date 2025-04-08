@@ -1,10 +1,6 @@
-env              = "dev"
-db_name          = "mydb"
-db_user          = "admin"
-db_password      = "mypassword"
-db_version       = "8.0"
-db_instance_type = "db.t3.micro"
-db_storage       = 20
-db_max_storage   = 100
-multi_az         = false
-backup_retention = 7
+# RDS Configuration
+instance_class    = "db.t3.micro"
+allocated_storage = 20
+db_name           = "mydb"
+db_username       = "admin"
+db_password       = "newpassword"

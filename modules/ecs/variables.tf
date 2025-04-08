@@ -1,49 +1,69 @@
-variable "cluster_name" {
-  description = "Name of the ECS cluster"
+variable "ecs_cluster_name" {
+  description = "ECS cluster name"
   type        = string
 }
 
-variable "app_image" {
-  description = "Docker image for both frontend and backend"
+variable "task_family" {
+  description = "ECS Task Family"
   type        = string
 }
 
-variable "task_cpu" {
-  description = "CPU units for task"
+variable "execution_role_arn" {
+  description = "IAM Role for ECS Execution"
+  type        = string
+}
+
+variable "task_role_arn" {
+  description = "IAM Role for ECS Tasks"
+  type        = string
+}
+
+variable "cpu" {
+  description = "Task CPU"
   type        = number
 }
 
-variable "task_memory" {
-  description = "Memory for task"
+variable "memory" {
+  description = "Task Memory"
   type        = number
 }
 
-variable "frontend_port" {
-  description = "Port for frontend container"
+variable "container_name" {
+  description = "Container name"
+  type        = string
+}
+
+variable "container_image" {
+  description = "Docker Image for the container"
+  type        = string
+}
+
+variable "container_port" {
+  description = "Port the container listens on"
   type        = number
 }
 
-variable "backend_port" {
-  description = "Port for backend container"
-  type        = number
+variable "service_name" {
+  description = "ECS Service Name"
+  type        = string
 }
 
 variable "desired_count" {
-  description = "Number of ECS service tasks"
+  description = "Number of tasks running"
   type        = number
 }
 
-variable "rds_endpoint" {
-  description = "RDS database endpoint"
+variable "private_subnets" {
+  description = "Private Subnets for ECS"
+  type        = list(string)
+}
+
+variable "ecs_security_group" {
+  description = "Security Group for ECS Tasks"
   type        = string
 }
 
-variable "db_user" {
-  description = "Database username"
-  type        = string
-}
-
-variable "db_pass" {
-  description = "Database password"
+variable "alb_target_group_arn" {
+  description = "Target Group ARN for ALB"
   type        = string
 }

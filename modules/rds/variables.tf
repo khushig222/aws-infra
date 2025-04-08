@@ -1,11 +1,11 @@
-variable "env" {
-  description = "Environment name (e.g., dev, prod)"
+variable "instance_class" {
+  description = "RDS instance type"
   type        = string
 }
 
-variable "vpc_id" {
-  description = "VPC ID created by Terraform"
-  type        = string
+variable "allocated_storage" {
+  description = "Storage size for RDS"
+  type        = number
 }
 
 variable "db_name" {
@@ -13,7 +13,7 @@ variable "db_name" {
   type        = string
 }
 
-variable "db_user" {
+variable "db_username" {
   description = "Database admin username"
   type        = string
 }
@@ -24,38 +24,12 @@ variable "db_password" {
   sensitive   = true
 }
 
-variable "db_version" {
-  description = "MySQL engine version"
+variable "private_subnet_ids" {
+  description = "Private subnets for RDS"
+  type        = list(string)
+}
+
+variable "rds_sg_id" {
+  description = "Security group for RDS"
   type        = string
-  default     = "8.0"
-}
-
-variable "db_instance_type" {
-  description = "Instance type for RDS"
-  type        = string
-  default     = "db.t3.micro"
-}
-
-variable "db_storage" {
-  description = "Initial allocated storage in GB"
-  type        = number
-  default     = 20
-}
-
-variable "db_max_storage" {
-  description = "Maximum storage allowed in GB"
-  type        = number
-  default     = 100
-}
-
-variable "multi_az" {
-  description = "Enable multi-AZ deployment for high availability"
-  type        = bool
-  default     = false
-}
-
-variable "backup_retention" {
-  description = "Number of days to retain backups"
-  type        = number
-  default     = 7
 }

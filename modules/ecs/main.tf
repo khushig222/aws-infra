@@ -1,55 +1,54 @@
-# Create ECS Cluster
-resource "aws_ecs_cluster" "ecs_cluster" {
-  name = var.cluster_name
+# ECS Cluster
+resource "aws_ecs_cluster" "app_cluster" {
+  name = var.ecs_cluster_name
 }
 
-# ECS Task Definition (Single Image for Both Frontend & Backend)
+# ECS Task Definition
 resource "aws_ecs_task_definition" "app_task" {
-  family                   = "app-task"
-  network_mode             = "bridge"
-  requires_compatibilities = ["EC2"]
-  cpu                      = var.task_cpu
-  memory                   = var.task_memory
+  family                   = var.task_family
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  execution_role_arn       = var.execution_role_arn
+  task_role_arn            = var.task_role_arn
+  cpu                      = var.cpu
+  memory                   = var.memory
 
   container_definitions = jsonencode([
     {
-      name  = "app"
-      image = var.app_image
-      cpu   = var.task_cpu
-      memory = var.task_memory
+      name      = var.container_name
+      image     = var.container_image
+      cpu       = var.cpu
+      memory    = var.memory
+      essential = true
       portMappings = [
         {
-          containerPort = var.frontend_port
-          hostPort      = var.frontend_port
-        },
-        {
-          containerPort = var.backend_port
-          hostPort      = var.backend_port
-        }
-      ]
-      environment = [
-        {
-          name  = "DB_HOST"
-          value = var.rds_endpoint
-        },
-        {
-          name  = "DB_USER"
-          value = var.db_user
-        },
-        {
-          name  = "DB_PASS"
-          value = var.db_pass
+          containerPort = var.container_port
+          hostPort      = var.container_port
         }
       ]
     }
   ])
 }
 
-# ECS Service (Single Service for Both Frontend & Backend)
+# ECS Service
 resource "aws_ecs_service" "app_service" {
-  name            = "app-service"
-  cluster         = aws_ecs_cluster.ecs_cluster.id
+  name            = var.service_name
+  cluster         = aws_ecs_cluster.app_cluster.id
   task_definition = aws_ecs_task_definition.app_task.arn
   desired_count   = var.desired_count
-  launch_type     = "EC2"
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets         = var.private_subnets
+    security_groups = [var.ecs_security_group]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = var.alb_target_group_arn
+    container_name   = var.container_name
+    container_port   = var.container_port
+  }
+
+  depends_on = [aws_ecs_task_definition.app_task]
 }

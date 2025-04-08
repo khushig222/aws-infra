@@ -1,4 +1,5 @@
-variable "s3_bucket" {
-  description = "The S3 bucket name"
-  type        = string
+variable "iam_role_names" {
+  description = "List of IAM roles to create"
+  type        = list(string)
+  default     = ["ec2-instance-role", "ecs-task-role"]
 }

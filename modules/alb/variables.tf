@@ -1,5 +1,5 @@
 variable "vpc_id" {
-  description = "The ID of the VPC"
+  description = "VPC ID"
   type        = string
 }
 
@@ -9,16 +9,16 @@ variable "public_subnet_ids" {
 }
 
 variable "alb_sg_id" {
-  description = "Security group ID for ALB"
+  description = "Security Group ID for ALB"
   type        = string
 }
 
-variable "alb_name" {
-  description = "Name of the Application Load Balancer"
+variable "public_ec2_id" {
+  description = "Public EC2 instance ID for frontend"
   type        = string
 }
 
-variable "tg_name" {
-  description = "Name of the Target Group"
+variable "private_ec2_id" {
+  description = "Private EC2 instance ID for backend"
   type        = string
 }

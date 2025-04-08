@@ -1,41 +1,50 @@
 variable "ami_id" {
-  description = "AMI ID for EC2 instances"
+  description = "AMI ID for the instances"
   type        = string
 }
 
 variable "instance_type" {
-  description = "EC2 instance type"
+  description = "Instance type"
   type        = string
 }
 
-variable "key_name" {
-  description = "SSH Key Name"
-  type        = string
-}
-
-# Subnets dynamically referenced from the VPC module
 variable "public_subnet_id" {
-  description = "Public subnet ID for frontend EC2"
+  description = "Public subnet ID (From VPC Module)"
   type        = string
 }
 
 variable "private_subnet_id" {
-  description = "Private subnet ID for backend EC2"
+  description = "Private subnet ID (From VPC Module)"
   type        = string
 }
 
-# Security groups dynamically referenced from the SG module
 variable "public_sg_id" {
-  description = "Security Group ID for public EC2"
+  description = "Security Group ID for Public EC2"
   type        = string
 }
 
 variable "private_sg_id" {
-  description = "Security Group ID for private EC2"
+  description = "Security Group ID for Private EC2"
   type        = string
 }
 
-variable "instance_name" {
-  description = "Prefix for EC2 instance names"
+variable "key_name" {
+  description = "SSH key pair name"
+  type        = string
+  default = "rds-key"
+}
+
+variable "vpc_id" {
+  description = "ID of the VPC where resources will be created"
+  type        = string
+}
+
+variable "iam_instance_profile" {
+  description = "IAM instance profile for EC2"
+  type        = string
+}
+
+variable "iam_role_name" {
+  description = "IAM Role Name for EC2"
   type        = string
 }

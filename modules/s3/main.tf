@@ -1,25 +1,10 @@
-# Create an S3 Bucket
-resource "aws_s3_bucket" "app_bucket" {
-  bucket        = "${var.env}-app-bucket-${random_string.suffix.result}"
-  force_destroy = true
-
-  tags = {
-    Name        = "${var.env}-app-bucket"
-    Environment = var.env
-  }
-}
-
-# Random suffix to ensure unique bucket name
-resource "random_string" "suffix" {
-  length  = 6
-  special = false
-  upper   = false
+resource "aws_s3_bucket" "app_storage" {
+  bucket = var.bucket_name
 }
 
 # Block Public Access
-resource "aws_s3_bucket_public_access_block" "public_access" {
-  bucket = aws_s3_bucket.app_bucket.id
-
+resource "aws_s3_bucket_public_access_block" "block_public_access" {
+  bucket                  = aws_s3_bucket.app_storage.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
@@ -28,7 +13,7 @@ resource "aws_s3_bucket_public_access_block" "public_access" {
 
 # Enable Versioning
 resource "aws_s3_bucket_versioning" "versioning" {
-  bucket = aws_s3_bucket.app_bucket.id
+  bucket = aws_s3_bucket.app_storage.id
   versioning_configuration {
     status = "Enabled"
   }
@@ -36,7 +21,7 @@ resource "aws_s3_bucket_versioning" "versioning" {
 
 # Enable Server-Side Encryption
 resource "aws_s3_bucket_server_side_encryption_configuration" "encryption" {
-  bucket = aws_s3_bucket.app_bucket.id
+  bucket = aws_s3_bucket.app_storage.id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -45,13 +30,17 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "encryption" {
   }
 }
 
-# Lifecycle Policy (Move to Glacier & Delete Old Files)
+# Lifecycle Policy (Move old files to Glacier after 30 days)
 resource "aws_s3_bucket_lifecycle_configuration" "lifecycle" {
-  bucket = aws_s3_bucket.app_bucket.id
+  bucket = aws_s3_bucket.app_storage.id
 
   rule {
-    id     = "move-to-glacier"
+    id     = "log-archive"
     status = "Enabled"
+
+    filter {
+      prefix = "logs/"  
+    }
 
     transition {
       days          = 30
@@ -59,12 +48,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "lifecycle" {
     }
 
     transition {
-      days          = 90
+      days          = 120
       storage_class = "DEEP_ARCHIVE"
     }
-
-    expiration {
-      days = 365
-    }
   }
+  depends_on = [aws_s3_bucket.app_storage]
 }
